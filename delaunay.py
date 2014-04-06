@@ -98,6 +98,8 @@ class DelaunayAnalysis1(Delaunay):
 					break
 		for t in stack:
 			self.triangles.remove(t)
+		for v in vertexes:
+			self.vertexes.remove(v)
 
 
 	def inTriangle(self,vertex,triangle):
