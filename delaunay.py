@@ -4,8 +4,6 @@ import numpy
 
 class Delaunay:
 
-	vertexes = []
-
 	def __init__(self,vertexes):
 		self.vertexes = vertexes
 		self.triangles = []
