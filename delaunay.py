@@ -88,19 +88,16 @@ class DelaunayAnalysis1(Delaunay):
 		return [topleftcorner,toprightcorner,bottomleftcorner,bottomrightcorner]
 		
 	def deleteBoundingRectangle(self,vertexes):
-		for triangle in self.triangles:
-			for vertex in vertexes:
-				if vertex in triangle.vertexes:
-					for neighbour in triangle.neighbours:
-						if neighbour.__class__.__name__ != "EmptyTriangle":
-							index = neighbour.neighbours.index(triangle)
-							neighbour.neighbours[index] = EmptyTriangle()
-					self.triangles.remove(triangle)
+
+		stack = []
+
+		for t in self.triangles:
+			for v in t.vertexes:
+				if v in vertexes:
+					stack.append(t)
 					break
-		for vertex in vertexes:
-			self.vertexes.remove(vertex)
-
-
+		for t in stack:
+			self.triangles.remove(t)
 
 
 	def inTriangle(self,vertex,triangle):
