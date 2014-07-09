@@ -4,12 +4,17 @@ import numpy
 
 class Delaunay:
 
-	def __init__(self,vertexes):
+	def __init__(self,vertexes,edges):
+	
 		self.vertexes = vertexes
+		self.edges = edges
 		self.triangles = []
+	
 	def analyze(self):
 		pass
+	
 	def printResult(self):
+
 		for k in range(0,len(self.vertexes),1):
 			self.vertexes[k].id = k
 		f = open("output.off","w")
@@ -19,6 +24,7 @@ class Delaunay:
 			f.write(str(vertex.x)+"\t"+str(vertex.y)+"\t0\n")
 		for triangle in self.triangles:
 			f.write("3 "+str(triangle.vertexes[0].id)+"\t"+str(triangle.vertexes[1].id)+"\t"+str(triangle.vertexes[2].id)+"\n")
+	
 	def inCircleTest(self,triangle1,triangle2):
 		# Looking for the vertex not shared
 		k = triangle2.neighbours.index(triangle1)
@@ -40,23 +46,8 @@ class Delaunay:
 		else:
 			return True
 
-
-
-class DelaunayAnalysis1(Delaunay):
-
-	def analyze(self):
-		first_vertexes = self.getFirstBoundingRectangle()
-		for vertex in self.vertexes:
-			for triangle in self.triangles:
-				if  self.inTriangle(vertex,triangle):
-					newTriangles = self.splitTriangle(vertex,triangle)
-					for newTriangle in newTriangles:
-						self.legalizeTriangle(newTriangle,newTriangle.neighbours[1])
-					break
-		self.deleteBoundingRectangle(first_vertexes)
-
-
 	def getFirstBoundingRectangle(self):
+
 		vertexes = self.vertexes
 
 		vertexes = sorted(vertexes, key=lambda vertex: vertex.x)
@@ -86,11 +77,10 @@ class DelaunayAnalysis1(Delaunay):
 		self.triangles = [triangle1,triangle2]
 
 		return [topleftcorner,toprightcorner,bottomleftcorner,bottomrightcorner]
-		
+
 	def deleteBoundingRectangle(self,vertexes):
 
 		stack = []
-
 		for t in self.triangles:
 			for v in t.vertexes:
 				if v in vertexes:
@@ -99,8 +89,7 @@ class DelaunayAnalysis1(Delaunay):
 		for t in stack:
 			self.triangles.remove(t)
 		for v in vertexes:
-			self.vertexes.remove(v)
-
+			self.vertexes.remove(v)	
 
 	def inTriangle(self,vertex,triangle):
 		# Cross product between vertex and point in triangle 
@@ -115,10 +104,9 @@ class DelaunayAnalysis1(Delaunay):
 				return False
 
 		return True
-
 	def splitTriangle(self,vertex,triangle):
-		flagThree = True
 
+		flagThree = True
 		for k in range(0,3,1):
 			vertex1 = triangle.vertexes[k]
 			vertex2 = triangle.vertexes[(k+1)%3]
@@ -137,7 +125,7 @@ class DelaunayAnalysis1(Delaunay):
 		return return_triangles
 
 	def splitInFourTriangles(self,vertex,triangle1,triangle2):
-		print triangle1,triangle2
+
 		k = triangle1.neighbours.index(triangle2)
 		j = triangle2.neighbours.index(triangle1)
 
@@ -175,6 +163,7 @@ class DelaunayAnalysis1(Delaunay):
 		return result_triangles
 
 	def splitInThreeTriangles(self,vertex,triangle):
+
 		vertexes = triangle.vertexes
 		neighbours = triangle.neighbours
 
@@ -205,47 +194,61 @@ class DelaunayAnalysis1(Delaunay):
 		return result_triangles
 
 	def legalizeTriangle(self,triangle1,triangle2):
+
 		if (triangle1.__class__.__name__ == "EmptyTriangle") or (triangle2.__class__.__name__ == "EmptyTriangle"):
 			return
 
 		t1 = triangle1
 		t2 = triangle2
 
+		newTriangle1 = triangle1
+		newTriangle2 = triangle2
+
 		# Change diagonal
 		if (self.inCircleTest(t1,t2)):
 
-			k = t1.neighbours.index(t2)
-			j = t2.neighbours.index(t1)
-
-			newTriangle1 = Triangle([t1.vertexes[(k+1)%3],t1.vertexes[(k+2)%3],t2.vertexes[(j+2)%3]],[])
-			newTriangle2 = Triangle([t2.vertexes[(j+1)%3],t2.vertexes[(j+2)%3],t1.vertexes[(k+2)%3]],[])
-
-			newTriangle1.neighbours = [t1.neighbours[(k+1)%3],newTriangle2,t2.neighbours[(j+2)%3]]
-			newTriangle2.neighbours = [t2.neighbours[(j+1)%3],newTriangle1,t1.neighbours[(k+2)%3]]
-
-			if newTriangle1.neighbours[0].__class__.__name__ != "EmptyTriangle":
-				aux = newTriangle1.neighbours[0].neighbours.index(t1)
-				newTriangle1.neighbours[0].neighbours[aux] = newTriangle1
-			if newTriangle1.neighbours[2].__class__.__name__ != "EmptyTriangle":
-				aux = newTriangle1.neighbours[2].neighbours.index(t2)
-				newTriangle1.neighbours[2].neighbours[aux] = newTriangle1
-
-			if newTriangle2.neighbours[0].__class__.__name__ != "EmptyTriangle":
-				aux = newTriangle2.neighbours[0].neighbours.index(t2)
-				newTriangle2.neighbours[0].neighbours[aux] = newTriangle2
-			if newTriangle2.neighbours[2].__class__.__name__ != "EmptyTriangle":
-				aux = newTriangle2.neighbours[2].neighbours.index(t1)
-				newTriangle2.neighbours[2].neighbours[aux] = newTriangle2
-
-			self.triangles.append(newTriangle1)
-			self.triangles.append(newTriangle2)
-			self.triangles.remove(t1)
-			self.triangles.remove(t2)
+			(newTriangle1,newTriangle2) = self.swapEdge(t1,t2)
 
 			self.legalizeTriangle(newTriangle1,newTriangle1.neighbours[2])
 			self.legalizeTriangle(newTriangle2,newTriangle2.neighbours[0])
 
+		return [newTriangle1,newTriangle2]
 
+
+	def swapEdge(self,triangle1,triangle2):
+
+		t1 = triangle1 
+		t2 = triangle2
+
+		k = t1.neighbours.index(t2)
+		j = t2.neighbours.index(t1)
+
+		newTriangle1 = Triangle([t1.vertexes[(k+1)%3],t1.vertexes[(k+2)%3],t2.vertexes[(j+2)%3]],[])
+		newTriangle2 = Triangle([t2.vertexes[(j+1)%3],t2.vertexes[(j+2)%3],t1.vertexes[(k+2)%3]],[])
+
+		newTriangle1.neighbours = [t1.neighbours[(k+1)%3],newTriangle2,t2.neighbours[(j+2)%3]]
+		newTriangle2.neighbours = [t2.neighbours[(j+1)%3],newTriangle1,t1.neighbours[(k+2)%3]]
+
+		if newTriangle1.neighbours[0].__class__.__name__ != "EmptyTriangle":
+			aux = newTriangle1.neighbours[0].neighbours.index(t1)
+			newTriangle1.neighbours[0].neighbours[aux] = newTriangle1
+		if newTriangle1.neighbours[2].__class__.__name__ != "EmptyTriangle":
+			aux = newTriangle1.neighbours[2].neighbours.index(t2)
+			newTriangle1.neighbours[2].neighbours[aux] = newTriangle1
+
+		if newTriangle2.neighbours[0].__class__.__name__ != "EmptyTriangle":
+			aux = newTriangle2.neighbours[0].neighbours.index(t2)
+			newTriangle2.neighbours[0].neighbours[aux] = newTriangle2
+		if newTriangle2.neighbours[2].__class__.__name__ != "EmptyTriangle":
+			aux = newTriangle2.neighbours[2].neighbours.index(t1)
+			newTriangle2.neighbours[2].neighbours[aux] = newTriangle2
+
+		self.triangles.append(newTriangle1)
+		self.triangles.append(newTriangle2)
+		self.triangles.remove(t1)
+		self.triangles.remove(t2)
+
+		return newTriangle1,newTriangle2
 
 
 
